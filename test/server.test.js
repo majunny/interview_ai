@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { once } from "node:events";
 import { createRequire } from "node:module";
 import { app } from "../server.js";
-import { bearerToken, getFirebaseWebConfig, getMissingFirebaseWebVariables, isFirebaseWebConfigured } from "../lib/firebase.js";
+import { bearerToken, getFirebaseWebConfig, getMissingFirebaseWebVariables, getTokenAudience, isFirebaseWebConfigured } from "../lib/firebase.js";
 
 const require = createRequire(import.meta.url);
 
@@ -55,4 +55,6 @@ test("Firebase helpers accept bearer tokens and never require private values in 
   assert.equal(Object.hasOwn(config, "privateKey"), false);
   assert.equal(isFirebaseWebConfigured(), Boolean(config.apiKey && config.authDomain && config.projectId && config.appId));
   assert.equal(getMissingFirebaseWebVariables().length === 0, isFirebaseWebConfigured());
+  const payload = Buffer.from(JSON.stringify({ aud: "firebase-project" })).toString("base64url");
+  assert.equal(getTokenAudience(`header.${payload}.signature`), "firebase-project");
 });

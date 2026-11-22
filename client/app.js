@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { GoogleAuthProvider, getAuth, onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
-import { upload } from "@vercel/blob/client";
+import { uploadPresigned } from "@vercel/blob/client";
 
 const app = document.querySelector("#app");
 const toast = document.querySelector("#toast");
@@ -178,7 +178,7 @@ function renderUpload() {
     <div class="grid two">
       <form class="card" id="upload-form">
         <h2>파일로 분석하기</h2><p class="subtle">PDF가 가장 정확하며, 촬영한 생기부 이미지도 분석할 수 있습니다.</p>
-        <label class="dropzone" id="dropzone"><input type="file" id="record-file" name="record" accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp,.gif" required><strong>파일을 선택하거나 여기로 끌어오세요</strong><span class="subtle">PDF · DOCX · TXT · JPG · PNG · WEBP · GIF / 최대 20MB</span><img class="file-preview hidden" id="file-preview" alt="선택한 이미지 미리보기"><div class="file-name" id="file-name"></div><div class="file-error hidden" id="file-error" role="alert"></div></label>
+        <label class="dropzone" id="dropzone"><input type="file" id="record-file" name="record" accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp,.gif"><strong>파일을 선택하거나 여기로 끌어오세요</strong><span class="subtle">PDF · DOCX · TXT · JPG · PNG · WEBP · GIF / 최대 20MB</span><img class="file-preview hidden" id="file-preview" alt="선택한 이미지 미리보기"><div class="file-name" id="file-name"></div><div class="file-error hidden" id="file-error" role="alert"></div></label>
         <div class="field"><label for="title">분석 이름</label><input id="title" name="title" placeholder="예: 2027학년도 수시 면접"></div>
         <div class="grid two"><div class="field"><label for="university">지원 대학</label><input id="university" name="targetUniversity" placeholder="선택 입력"></div><div class="field"><label for="major">지원 학과</label><input id="major" name="targetMajor" placeholder="예: 컴퓨터공학과"></div></div>
         <div class="privacy-note">원본 파일은 비공개 임시 저장소에 업로드되며 분석 직후 삭제됩니다. 분석 결과와 면접 기록만 계정별로 저장됩니다.</div>
@@ -240,7 +240,7 @@ async function uploadProfile(event) {
     const idToken = await auth.currentUser.getIdToken();
     const contentType = recordContentType(file);
     const uploadName = `${auth.currentUser.uid}/${crypto.randomUUID()}-${safeUploadName(file.name)}`;
-    const blob = await upload(uploadName, file, {
+    const blob = await uploadPresigned(uploadName, file, {
       access: "private",
       handleUploadUrl: "/api/uploads",
       headers: { Authorization: `Bearer ${idToken}` },

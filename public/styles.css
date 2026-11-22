@@ -82,6 +82,7 @@ h1 { margin: 18px 0 22px; font: 700 clamp(45px, 6vw, 76px)/1.05 "Gowun Batang", 
 .page-head { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 30px; }
 .page-head h1 { font-size: clamp(36px, 5vw, 58px); margin: 8px 0 0; }
 .grid { display: grid; gap: 20px; }
+.grid > * { min-width: 0; }
 .grid.two { grid-template-columns: 1fr 1fr; }
 .grid.sidebar { grid-template-columns: 320px 1fr; align-items: start; }
 .card { border: 1px solid rgba(22, 33, 28, .1); border-radius: 20px; background: rgba(255, 253, 248, .86); box-shadow: 0 8px 26px rgba(38, 47, 41, .05); padding: 26px; }
@@ -93,11 +94,12 @@ h1 { margin: 18px 0 22px; font: 700 clamp(45px, 6vw, 76px)/1.05 "Gowun Batang", 
 input, textarea, select { width: 100%; border: 1px solid var(--line); background: #fff; border-radius: 11px; color: var(--ink); padding: 13px 14px; outline: none; }
 input:focus, textarea:focus, select:focus { border-color: var(--green-2); box-shadow: 0 0 0 3px rgba(35, 119, 91, .12); }
 textarea { resize: vertical; min-height: 150px; line-height: 1.65; }
-.dropzone { border: 1.5px dashed #aeb9b1; border-radius: 16px; padding: 28px; text-align: center; background: rgba(220, 236, 228, .34); cursor: pointer; }
+.dropzone { display: block; position: relative; overflow: hidden; border: 1.5px dashed #aeb9b1; border-radius: 16px; padding: 28px; text-align: center; background: rgba(220, 236, 228, .34); cursor: pointer; }
 .dropzone.dragging { border-color: var(--green); background: rgba(220, 236, 228, .75); }
+.dropzone:focus-within { border-color: var(--green-2); box-shadow: 0 0 0 3px rgba(35, 119, 91, .12); }
 .dropzone strong { display: block; margin-bottom: 6px; }
-.dropzone input { display: none; }
-.file-name { font-size: 13px; color: var(--green); margin-top: 10px; min-height: 18px; }
+.dropzone input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; pointer-events: none; }
+.file-name { max-width: 100%; font-size: 13px; color: var(--green); margin-top: 10px; min-height: 18px; overflow-wrap: anywhere; word-break: break-all; }
 .file-preview { display: block; width: min(100%, 320px); max-height: 240px; object-fit: contain; margin: 18px auto 0; border-radius: 12px; border: 1px solid var(--line); background: white; }
 .file-error { margin-top: 8px; color: var(--red); font-size: 13px; font-weight: 700; }
 .privacy-note { background: var(--mint); border-radius: 13px; padding: 14px; color: #2d5d4c; font-size: 13px; line-height: 1.55; margin: 18px 0; }

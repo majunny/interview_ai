@@ -3,8 +3,8 @@ import express from "express";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
-import { del, get } from "@vercel/blob";
-import { handleUpload } from "@vercel/blob/client";
+import { del, get, issueSignedToken } from "@vercel/blob";
+import { handleUploadPresigned } from "@vercel/blob/client";
 import { analyzeStudentRecord, buildSessionReport, evaluateAnswer, getApiKeyCount, model } from "./lib/openai.js";
 import { authenticate, bearerToken, getFirebaseWebConfig, getMissingFirebaseWebVariables, isFirebaseAdminConfigured, isFirebaseWebConfigured, verifyFirebaseToken } from "./lib/firebase.js";
 import { deleteProfile, deleteSession, getProfile, getSession, listDashboard, saveProfile, saveSession, touchUser, updateSession } from "./lib/repository.js";
@@ -56,22 +56,38 @@ app.get("/api/dashboard", authenticate, asyncRoute(async (request, response) => 
 }));
 
 app.post("/api/uploads", asyncRoute(async (request, response) => {
-  const result = await handleUpload({
+  if (!process.env.BLOB_STORE_ID && !process.env.BLOB_READ_WRITE_TOKEN) {
+    return response.status(503).json({ error: "Vercel Blob Store가 이 프로젝트에 연결되지 않았습니다." });
+  }
+  const result = await handleUploadPresigned({
     request,
     body: request.body,
-    onBeforeGenerateToken: async (pathname) => {
+    // 완료 콜백을 사용하지 않으므로 공개 키는 토큰 발급 경로에서 참조되지 않는다.
+    webhookPublicKey: process.env.BLOB_WEBHOOK_PUBLIC_KEY || "callback-not-used",
+    getSignedToken: async (pathname) => {
       const user = await verifyFirebaseToken(bearerToken(request.headers.authorization));
       if (!pathname.startsWith(`${user.uid}/`)) {
         const error = new Error("업로드 경로가 로그인 사용자와 일치하지 않습니다.");
         error.status = 403;
         throw error;
       }
-      return {
+      const validUntil = Date.now() + 15 * 60 * 1000;
+      const token = await issueSignedToken({
+        pathname,
+        operations: ["put"],
         allowedContentTypes: [...acceptedMimeTypes],
         maximumSizeInBytes: maxUploadBytes,
-        addRandomSuffix: true,
-        tokenPayload: JSON.stringify({ uid: user.uid }),
-        ttlDays: 1
+        validUntil
+      });
+      return {
+        token,
+        urlOptions: {
+          allowedContentTypes: [...acceptedMimeTypes],
+          maximumSizeInBytes: maxUploadBytes,
+          validUntil,
+          addRandomSuffix: true,
+          ttlDays: 1
+        }
       };
     }
   });
