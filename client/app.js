@@ -379,6 +379,9 @@ function renderInterview(feedback = null) {
 async function submitAnswer() {
   const answer = document.querySelector("#answer").value.trim();
   if (!answer) return showToast("답변을 입력해 주세요.");
+  const submitButton = document.querySelector("#submit-answer");
+  if (submitButton.disabled) return;
+  submitButton.disabled = true;
   stopTimer(); stopRecognition();
   showLoading(state.session.mode === "practice" ? "답변을 코칭하고 있어요" : "답변을 저장하고 있어요", "생기부 근거와 답변을 비교하는 중입니다.");
   try {
@@ -389,7 +392,7 @@ async function submitAnswer() {
       renderAnswerFeedback(result.answer.feedback, result.finished);
     } else if (result.finished) await finishInterview();
     else { hideLoading(); renderInterview(); }
-  } catch (error) { hideLoading(); showToast(error.message); startTimer(); }
+  } catch (error) { hideLoading(); showToast(error.message); submitButton.disabled = false; startTimer(); }
 }
 
 function renderAnswerFeedback(feedback, finished) {

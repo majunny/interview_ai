@@ -7,7 +7,7 @@ import { del, get, issueSignedToken } from "@vercel/blob";
 import { handleUploadPresigned } from "@vercel/blob/client";
 import { analyzeStudentRecord, buildSessionReport, evaluateAnswer, getApiKeyCount, model } from "./lib/openai.js";
 import { authenticate, bearerToken, getFirebaseWebConfig, getMissingFirebaseWebVariables, isFirebaseAdminConfigured, isFirebaseWebConfigured, verifyFirebaseToken } from "./lib/firebase.js";
-import { deleteProfile, deleteSession, getProfile, getSession, listDashboard, saveProfile, saveSession, touchUser, updateSession } from "./lib/repository.js";
+import { deleteProfile, deleteSession, getProfile, getSession, listDashboard, listProfileSessionQuestions, saveProfile, saveSession, touchUser, updateSession } from "./lib/repository.js";
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -144,6 +144,7 @@ app.post("/api/sessions", authenticate, asyncRoute(async (request, response) => 
   if (!profile) return response.status(404).json({ error: "먼저 생기부를 등록해 주세요." });
   const mode = request.body.mode === "practice" ? "practice" : "mock";
   const requestedCount = Math.max(3, Math.min(10, Number(request.body.questionCount) || 5));
+  const previouslyAsked = await listProfileSessionQuestions(request.user.id, profile.id);
   const session = {
     id: randomUUID(),
     profileId: profile.id,
@@ -151,7 +152,7 @@ app.post("/api/sessions", authenticate, asyncRoute(async (request, response) => 
     mode,
     status: "active",
     currentIndex: 0,
-    questions: selectQuestions(profile.questions, requestedCount),
+    questions: selectQuestions(profile.questions, requestedCount, previouslyAsked),
     answers: [],
     report: null,
     createdAt: new Date().toISOString(),
@@ -232,25 +233,58 @@ function safeFilename(value) {
   return path.basename(String(value || "record")).replace(/[\u0000-\u001f]/g, "").slice(0, 180) || "record";
 }
 
-function selectQuestions(questions, count) {
-  const shuffled = [...questions].sort(() => Math.random() - 0.5);
+function selectQuestions(questions, count, previouslyAsked = []) {
+  const shuffled = shuffleQuestions(Array.isArray(questions) ? questions : []);
+  const previousIds = new Set(previouslyAsked.map((question) => question.id).filter(Boolean));
+  const previousTexts = new Set(previouslyAsked.map((question) => normalizeQuestion(question.question)).filter(Boolean));
+  const unseen = shuffled.filter((question) => !previousIds.has(question.id) && !previousTexts.has(normalizeQuestion(question.question)));
+  const candidates = [...unseen, ...shuffled.filter((question) => !unseen.includes(question))];
   const selected = [];
   const categories = new Set();
-  for (const question of shuffled) {
-    if (!categories.has(question.category)) {
+  for (const question of candidates) {
+    if (!categories.has(question.category) && !isSimilarToSelected(question, selected)) {
       selected.push(question);
       categories.add(question.category);
     }
     if (selected.length === count) return selected;
   }
-  for (const question of shuffled) {
-    if (!selected.some((item) => item.id === question.id)) selected.push(question);
+  for (const question of candidates) {
+    if (!selected.includes(question) && !isSimilarToSelected(question, selected)) selected.push(question);
     if (selected.length === count) break;
   }
   return selected;
 }
 
-export { app };
+function shuffleQuestions(questions) {
+  const result = [...questions];
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [result[index], result[swapIndex]] = [result[swapIndex], result[index]];
+  }
+  return result;
+}
+
+function normalizeQuestion(value) {
+  return String(value || "").normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+}
+
+function isSimilarToSelected(question, selected) {
+  const words = questionWords(question.question);
+  const normalized = normalizeQuestion(question.question);
+  return selected.some((item) => {
+    if (normalized === normalizeQuestion(item.question)) return true;
+    const otherWords = questionWords(item.question);
+    const intersection = [...words].filter((word) => otherWords.has(word)).length;
+    const union = new Set([...words, ...otherWords]).size;
+    return union > 0 && intersection / union >= 0.72;
+  });
+}
+
+function questionWords(value) {
+  return new Set(String(value || "").normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}\s]+/gu, " ").split(/\s+/).filter((word) => word.length > 1));
+}
+
+export { app, selectQuestions };
 export default app;
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

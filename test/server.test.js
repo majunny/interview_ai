@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import { createRequire } from "node:module";
-import { app } from "../server.js";
+import { app, selectQuestions } from "../server.js";
 import { bearerToken, getFirebaseWebConfig, getMissingFirebaseWebVariables, getTokenAudience, isFirebaseWebConfigured } from "../lib/firebase.js";
 
 const require = createRequire(import.meta.url);
@@ -57,4 +57,19 @@ test("Firebase helpers accept bearer tokens and never require private values in 
   assert.equal(getMissingFirebaseWebVariables().length === 0, isFirebaseWebConfigured());
   const payload = Buffer.from(JSON.stringify({ aud: "firebase-project" })).toString("base64url");
   assert.equal(getTokenAudience(`header.${payload}.signature`), "firebase-project");
+});
+
+test("question selection prefers unseen questions and removes duplicates", () => {
+  const questions = [
+    { id: "old", category: "학업역량", question: "이전에 했던 탐구를 설명해 주세요." },
+    { id: "one", category: "지원동기", question: "이 학과에 지원한 동기는 무엇인가요?" },
+    { id: "two", category: "지원동기", question: "이 학과에 지원한 동기는 무엇인가요?" },
+    { id: "three", category: "탐구활동", question: "실험에서 변인을 어떻게 통제했나요?" },
+    { id: "four", category: "협업·인성", question: "모둠 활동에서 맡은 역할은 무엇인가요?" },
+    { id: "five", category: "전공적합성", question: "활동이 전공 선택에 어떤 영향을 주었나요?" }
+  ];
+  const selected = selectQuestions(questions, 3, [questions[0]]);
+  assert.equal(selected.length, 3);
+  assert.equal(selected.some((question) => question.id === "old"), false);
+  assert.equal(new Set(selected.map((question) => question.question)).size, selected.length);
 });
