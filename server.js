@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { del, get } from "@vercel/blob";
 import { handleUpload } from "@vercel/blob/client";
 import { analyzeStudentRecord, buildSessionReport, evaluateAnswer, getApiKeyCount, model } from "./lib/openai.js";
-import { authenticate, bearerToken, getFirebaseWebConfig, isFirebaseAdminConfigured, isFirebaseWebConfigured, verifyFirebaseToken } from "./lib/firebase.js";
+import { authenticate, bearerToken, getFirebaseWebConfig, getMissingFirebaseWebVariables, isFirebaseAdminConfigured, isFirebaseWebConfigured, verifyFirebaseToken } from "./lib/firebase.js";
 import { deleteProfile, deleteSession, getProfile, getSession, listDashboard, saveProfile, saveSession, touchUser, updateSession } from "./lib/repository.js";
 
 const app = express();
@@ -41,7 +41,8 @@ app.get("/api/health", (_request, response) => {
 });
 
 app.get("/api/config", (_request, response) => {
-  if (!isFirebaseWebConfigured()) return response.status(503).json({ error: "Firebase 웹 환경변수가 설정되지 않았습니다." });
+  const missing = getMissingFirebaseWebVariables();
+  if (missing.length) return response.status(503).json({ error: `Firebase 웹 환경변수가 누락되었습니다: ${missing.join(", ")}` });
   response.json({ firebase: getFirebaseWebConfig() });
 });
 
