@@ -1,8 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { once } from "node:events";
+import { createRequire } from "node:module";
 import { app } from "../server.js";
 import { bearerToken, getFirebaseWebConfig, isFirebaseWebConfigured } from "../lib/firebase.js";
+
+const require = createRequire(import.meta.url);
+
+test("Firebase token verifier keeps a Vercel-compatible CommonJS JWKS dependency", () => {
+  assert.doesNotThrow(() => require("jwks-rsa"));
+  assert.match(require("jwks-rsa/package.json").version, /^3\./);
+  assert.match(require("jwks-rsa/node_modules/jose/package.json").version, /^4\./);
+});
 
 test("health endpoint and static app are available without exposing secrets", async () => {
   const server = app.listen(0, "127.0.0.1");

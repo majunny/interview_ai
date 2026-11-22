@@ -18,11 +18,12 @@
     "esbuild": "^0.28.2",
     "express": "^5.1.0",
     "firebase": "^13.4.0",
-    "firebase-admin": "^14.5.1",
+    "firebase-admin": "14.5.1",
     "openai": "^6.15.0"
   },
   "overrides": {
     "@grpc/grpc-js": ">=1.13.6",
+    "jwks-rsa": "3.2.2",
     "zod": ">=4.6.6"
   }
 }
