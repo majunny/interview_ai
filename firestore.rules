@@ -1,0 +1,10 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 브라우저는 Express API만 사용합니다. Admin SDK는 이 규칙의 영향을 받지 않습니다.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
