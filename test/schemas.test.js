@@ -17,6 +17,13 @@ test("profile analysis requests enough varied interview questions", () => {
   assert.ok(profileAnalysisSchema.properties.questions.items.properties.category.enum.includes("압박·꼬리질문"));
 });
 
+test("profile analysis creates a strict concept dictionary", () => {
+  const concepts = profileAnalysisSchema.properties.concepts;
+  assert.ok(concepts.minItems >= 3);
+  assert.equal(concepts.items.additionalProperties, false);
+  assert.deepEqual(Object.keys(concepts.items.properties).sort(), [...concepts.items.required].sort());
+});
+
 test("report covers the five promised evaluation dimensions", () => {
   assert.deepEqual(sessionReportSchema.properties.dimensions.required.sort(), [
     "authenticity", "communication", "logic", "recordAlignment", "specificity"

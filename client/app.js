@@ -147,6 +147,7 @@ function renderHome() {
 function renderRecord() {
   if (!state.profiles.length) return renderUpload();
   const selected = state.profiles.find((item) => item.id === state.profileId) || state.profiles[0];
+  const concepts = Array.isArray(selected.concepts) ? selected.concepts : [];
   state.profileId = selected.id;
   app.innerHTML = `
     <div class="page-head"><div><span class="eyebrow">Record analysis</span><h1>생기부 분석</h1></div><button class="btn btn-secondary" id="new-profile">+ 새 생기부</button></div>
@@ -154,10 +155,13 @@ function renderRecord() {
       <aside class="card"><h3>분석 목록</h3><div class="profile-list">${state.profiles.map(profile => `
         <button class="profile-item ${profile.id === selected.id ? "active" : ""}" data-profile="${profile.id}"><b>${escapeHtml(profile.title)}</b><small>${formatDate(profile.createdAt)}</small></button>`).join("")}</div></aside>
       <section class="card">
-        <div class="page-head"><div><span class="tag orange">${escapeHtml(selected.targetMajor || "지원 전공 미설정")}</span><h2 style="margin-top:12px">${escapeHtml(selected.title)}</h2><p class="subtle">${escapeHtml(selected.studentOverview)}</p></div><button class="btn btn-danger" id="delete-profile">삭제</button></div>
+        <div class="page-head"><div><span class="tag orange">${escapeHtml(selected.targetMajor || "지원 전공 미설정")}</span><h2 style="margin-top:12px">${escapeHtml(selected.title)}</h2><p class="subtle">${escapeHtml(selected.studentOverview)}</p></div><div class="record-actions"><button class="btn btn-primary" id="study-concepts">개념 공부하기</button><button class="btn btn-danger" id="delete-profile">삭제</button></div></div>
         <div class="tag-row">${selected.strengths.map(item => `<span class="tag">${escapeHtml(item)}</span>`).join("")}</div>
         <div class="analysis-block"><h3>주요 활동</h3>${selected.activities.map(activity => `<article class="activity"><b>${escapeHtml(activity.title)}</b><p>${escapeHtml(activity.evidence)}</p><div class="tag-row">${activity.themes.map(theme => `<span class="tag">${escapeHtml(theme)}</span>`).join("")}</div></article>`).join("")}</div>
-        <div class="analysis-block"><h3>예상 질문 ${selected.questions.length}개</h3>${selected.questions.slice(0, 6).map(q => `<div class="question-preview"><span class="tag orange">${escapeHtml(q.category)}</span><p>${escapeHtml(q.question)}</p></div>`).join("")}</div>
+        <div class="analysis-block concept-dictionary" id="concept-dictionary">
+          <div class="concept-heading"><div><h3>전문 개념 사전 ${concepts.length ? `${concepts.length}개` : ""}</h3><p class="subtle">생기부 활동을 이해하고 설명할 때 필요한 개념을 정리했습니다.</p></div>${concepts.length ? `<div class="concept-toolbar"><button class="btn btn-secondary" id="expand-concepts" type="button">모두 펼치기</button><button class="btn btn-secondary" id="collapse-concepts" type="button">모두 접기</button><button class="btn btn-secondary" id="download-concepts" type="button">다운로드</button></div>` : ""}</div>
+          ${concepts.length ? `<div class="concept-list">${concepts.map((concept) => `<details class="concept-item"><summary><span><b>${escapeHtml(concept.term)}</b><small>${escapeHtml(concept.category)}</small></span><span class="concept-toggle" aria-hidden="true">⌄</span></summary><div class="concept-content"><p>${escapeHtml(concept.definition)}</p><div class="concept-connection"><b>생기부 연결</b><span>${escapeHtml(concept.recordConnection)}</span></div><div><b>공부할 핵심</b><ul>${(concept.keyPoints || []).map(point => `<li>${escapeHtml(point)}</li>`).join("")}</ul></div></div></details>`).join("")}</div>` : `<div class="concept-empty"><b>아직 개념 사전이 없는 분석입니다.</b><p>기존 분석은 개념 추출 기능이 추가되기 전에 생성되었습니다. 새 생기부로 분석하면 개념 사전이 함께 만들어집니다.</p></div>`}
+        </div>
         <div class="analysis-block"><h3>면접 시작</h3><div class="grid two">
           <label class="card mode-card selected"><input type="radio" name="mode" value="practice" checked><span class="mode-icon">✎</span><h3>코칭 연습</h3><p class="subtle">매 답변 직후 잘한 점과 개선 답변을 확인합니다.</p></label>
           <label class="card mode-card"><input type="radio" name="mode" value="mock"><span class="mode-icon">●</span><h3>실전 모의면접</h3><p class="subtle">중간 피드백 없이 끝까지 진행한 뒤 종합 평가를 받습니다.</p></label>
@@ -168,8 +172,40 @@ function renderRecord() {
   document.querySelector("#new-profile").onclick = renderUpload;
   document.querySelectorAll("[data-profile]").forEach(button => button.onclick = () => { state.profileId = button.dataset.profile; renderRecord(); });
   document.querySelectorAll(".mode-card").forEach(card => card.onclick = () => { document.querySelectorAll(".mode-card").forEach(x => x.classList.remove("selected")); card.classList.add("selected"); card.querySelector("input").checked = true; });
+  document.querySelector("#study-concepts").onclick = () => {
+    document.querySelector("#concept-dictionary").scrollIntoView({ behavior: "smooth", block: "start" });
+    document.querySelector(".concept-item")?.setAttribute("open", "");
+  };
+  document.querySelector("#expand-concepts")?.addEventListener("click", () => document.querySelectorAll(".concept-item").forEach(item => { item.open = true; }));
+  document.querySelector("#collapse-concepts")?.addEventListener("click", () => document.querySelectorAll(".concept-item").forEach(item => { item.open = false; }));
+  document.querySelector("#download-concepts")?.addEventListener("click", () => downloadConceptDictionary(selected, concepts));
   document.querySelector("#delete-profile").onclick = deleteProfile;
   document.querySelector("#start-interview").onclick = startInterview;
+}
+
+function downloadConceptDictionary(profile, concepts) {
+  const lines = [
+    `# ${profile.title} · 전문 개념 사전`,
+    "",
+    `- 지원 대학: ${profile.targetUniversity || "미설정"}`,
+    `- 지원 학과: ${profile.targetMajor || "미설정"}`,
+    `- 개념 수: ${concepts.length}개`,
+    ""
+  ];
+  concepts.forEach((concept, index) => {
+    lines.push(`## ${index + 1}. ${concept.term}`, "", `**분야:** ${concept.category}`, "", concept.definition, "", `**생기부 연결:** ${concept.recordConnection}`, "", "**공부할 핵심**", ...(concept.keyPoints || []).map(point => `- ${point}`), "");
+  });
+  const blob = new Blob(["\uFEFF", lines.join("\n")], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${safeDownloadName(profile.title)}-전문-개념-사전.md`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function safeDownloadName(value) {
+  return String(value || "생기부").normalize("NFKC").replace(/[\\/:*?"<>|]+/g, "-").trim().slice(0, 80) || "생기부";
 }
 
 function renderUpload() {

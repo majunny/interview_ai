@@ -114,6 +114,26 @@ textarea { resize: vertical; min-height: 150px; line-height: 1.65; }
 .tag { border-radius: 99px; padding: 6px 10px; background: var(--mint); color: var(--green); font-size: 12px; font-weight: 700; }
 .tag.orange { background: #f9e7d9; color: #9d4d27; }
 .analysis-block { margin-top: 24px; padding-top: 22px; border-top: 1px solid var(--line); }
+.record-actions, .concept-toolbar { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.concept-dictionary { scroll-margin-top: 24px; }
+.concept-heading { display: flex; align-items: start; justify-content: space-between; gap: 18px; }
+.concept-heading p { margin: 4px 0 0; }
+.concept-toolbar .btn { padding: 9px 12px; font-size: 12px; }
+.concept-list { display: grid; gap: 10px; margin-top: 18px; }
+.concept-item { border: 1px solid var(--line); border-radius: 14px; background: rgba(255, 255, 255, .62); overflow: hidden; }
+.concept-item summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 18px; cursor: pointer; list-style: none; }
+.concept-item summary::-webkit-details-marker { display: none; }
+.concept-item summary > span:first-child { min-width: 0; }
+.concept-item summary b { overflow-wrap: anywhere; }
+.concept-item summary small { display: block; margin-top: 5px; color: var(--orange); font-weight: 700; }
+.concept-toggle { flex: 0 0 auto; color: var(--green); font-size: 20px; transition: transform .2s; }
+.concept-item[open] .concept-toggle { transform: rotate(180deg); }
+.concept-content { padding: 0 18px 18px; border-top: 1px solid var(--line); line-height: 1.65; }
+.concept-content > p { margin: 16px 0; }
+.concept-content ul { margin: 8px 0 0; padding-left: 22px; color: var(--muted); }
+.concept-connection { display: grid; gap: 5px; padding: 13px 14px; margin-bottom: 16px; border-radius: 11px; background: var(--mint); color: #2d5d4c; }
+.concept-empty { margin-top: 16px; padding: 18px; border-radius: 13px; background: var(--mint); color: #2d5d4c; }
+.concept-empty p { margin: 7px 0 0; line-height: 1.6; }
 .activity { padding: 15px 0; border-bottom: 1px solid var(--line); }
 .activity:last-child { border-bottom: 0; }
 .activity p { margin-bottom: 6px; color: var(--muted); line-height: 1.55; }
@@ -182,6 +202,8 @@ textarea { resize: vertical; min-height: 150px; line-height: 1.65; }
   .steps { grid-template-columns: 1fr; }
   .step { border-right: 0; border-bottom: 1px solid var(--line); }
   .page-head { align-items: start; flex-direction: column; }
+  .record-actions, .concept-toolbar { justify-content: flex-start; }
+  .concept-heading { flex-direction: column; }
   .side-note { position: static; }
   main { padding-top: 34px; }
 }

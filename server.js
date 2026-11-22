@@ -122,6 +122,7 @@ app.post("/api/profiles", authenticate, asyncRoute(async (request, response) => 
       targetMajor,
       createdAt: new Date().toISOString(),
       ...analysis,
+      concepts: analysis.concepts.map((concept) => ({ ...concept, id: randomUUID() })),
       questions: analysis.questions.map((question) => ({ ...question, id: randomUUID() }))
     };
     await saveProfile(request.user.id, profile);
